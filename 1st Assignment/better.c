@@ -2,11 +2,10 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h> //for sleep
-#include <string.h> //for strcat
 #include <time.h>
 #include "draft.h"
 
-pthread_mutex_t lock, account, transNo, timecount, seatPlan, monitorLock, randLock;
+pthread_mutex_t telcount, account, transNo, timecount, seatPlan, monitorLock, randLock;
 pthread_cond_t telCond = PTHREAD_COND_INITIALIZER;
 int rc;
 int income;	//ta esoda
@@ -24,7 +23,7 @@ void *call(void* threadId) {
 	int j, prob, sleeptime, numOfseats, cost;
 	int *seats;
 
-	rc = pthread_mutex_lock(&lock);
+	rc = pthread_mutex_lock(&telcount);
 	if (rc != 0) {
 		printf("ERROR: return code from pthread_mutex_lock() is %d\n", rc);
 		pthread_exit(&rc);
@@ -35,16 +34,16 @@ void *call(void* threadId) {
 	rc = pthread_mutex_unlock(&timecount);
 
 	while(telAvailable == 0) {
-		rc = pthread_cond_wait(&telCond, &lock);
+		rc = pthread_cond_wait(&telCond, &telcount);
 		if (rc != 0) {
 			printf("ERROR: return code from pthread_cond_wait() is %d\n", rc);
 			pthread_exit(&rc);
 		}
 	}
-
-	telAvailable--;		//meiwnei ton metriti twn diathesimwn tilefwnitwn
 	
-	rc = pthread_mutex_unlock(&lock);
+	telAvailable--;	//meiwnei ton metriti twn diathesimwn tifelwnitwn
+
+	rc = pthread_mutex_unlock(&telcount);
 	if (rc != 0) {
 		printf("ERROR: return code from pthread_mutex_unlock() is %d\n", rc);
 		pthread_exit(&rc);
@@ -55,17 +54,18 @@ void *call(void* threadId) {
 	m += mid.tv_sec - start.tv_sec; 
 	rc = pthread_mutex_unlock(&timecount);
 
-	rc = pthread_mutex_lock(&randLock);
 	//epilegei enan tyxaio arithmo eisitiriwn (1-5)
+	rc = pthread_mutex_lock(&randLock);
 	numOfseats = (rand_r(&seed)%Nseathigh) + Nseatlow;
 	printf("thread %d: seats = %d.\n", *tid, numOfseats);
-	seats = (int*)malloc(numOfseats*sizeof(int)); 
-	
+	seats = (int*)malloc(numOfseats*sizeof(int));
+
 	//xreaizetai ena tyxaio plithos deyteroleptwn (5-10)
 	sleeptime = (rand_r(&seed)%(Tseathigh-Tseatlow+1)) + Tseatlow;
-	printf("thread %d: will wait %d seconds.\n", *tid, sleeptime);
-	rc = pthread_mutex_lock(&randLock);
+	printf("thread %d: will wait %d.\n", *tid, sleeptime);
+	rc = pthread_mutex_unlock(&randLock);
 
+	//sleep(sleeptime);
 	sleep(sleeptime);
 
 	rc = pthread_mutex_lock(&telcount);
@@ -84,9 +84,10 @@ void *call(void* threadId) {
 		} 
 		//an yparxoun theseis
 		else {
+
 			//desmeyei tis theseis sto plano
 			rc = pthread_mutex_lock(&seatPlan);
-			for (j = 0; j < numOfseats; j++) {
+			for(j=0; j < numOfseats; j++) {
 				seatsTable[counter] = *tid;
 				counter++;
 				seats[j] = counter;
@@ -94,7 +95,9 @@ void *call(void* threadId) {
 			rc = pthread_mutex_unlock(&seatPlan);
 
 			//plirwmi me pistwtiki
+			rc = pthread_mutex_lock(&randLock);
 			prob = rand_r(&seed)%100;
+			rc = pthread_mutex_unlock(&randLock);
 
 			//an i plirwmi apotyxei
 			if (prob > Pcardsuccess) {
@@ -119,7 +122,6 @@ void *call(void* threadId) {
 			rc = pthread_mutex_lock(&account);
 			income += cost;
 			rc = pthread_mutex_unlock(&account);
-						
 
 			rc = pthread_mutex_lock(&monitorLock);
 			printf("Πελάτης: %d. Η κράτηση ολοκληρώθηκε επιτυχώς. Ο αριθμός συναλλαγής είναι <%d>, οι θέσεις σας είναι οι <", *tid, k);		
@@ -130,7 +132,6 @@ void *call(void* threadId) {
 				}
 			}
 			printf("> και το κόστος συναλλαγής είναι %d ευρώ.\n", cost);
-					
 			rc = pthread_mutex_unlock(&monitorLock);
 
 			//arithmitis synallagis
@@ -147,6 +148,7 @@ void *call(void* threadId) {
 	rc = pthread_mutex_unlock(&timecount);
 
 	telAvailable++;
+
 	pthread_cond_signal(&telCond);
 	if (rc != 0) {
 		printf("ERROR: return code from pthread_cond_signal() is %d\n", rc);
@@ -167,7 +169,7 @@ int main(int argc, char** argv) {
 	int i;
 
 	if (argc != 3) {
-		printf("Error.\n");
+		printf("Error. Provide two arguments.\n");
 		return -1;
 	}
 
@@ -215,6 +217,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	printf("seats taken: %d.\n", counter);
 	printf("Τα συνολικά έσοδα από τις πωλήσεις είναι: %d ευρώ.\n", income);
 	printf("Ο μέσος όρος αναμονής των πελατών είναι = %f δευτερόλεπτα.\n", m/(Ncust-Ntel));
 	printf("Ο μέσος όρος εξυπηρέτησης των πελατών είναι = %f δευτερόλεπτα.\n", sum/Ncust);
@@ -236,6 +239,8 @@ int main(int argc, char** argv) {
 	rc = pthread_mutex_destroy(&transNo);
 	rc = pthread_mutex_destroy(&timecount);
 	rc = pthread_mutex_destroy(&seatPlan);
+	rc = pthread_mutex_destroy(&monitorLock);
+	rc = pthread_mutex_destroy(&randLock);
 	
 	rc = pthread_cond_destroy(&telCond);
 	if (rc != 0) {
