@@ -92,7 +92,7 @@ void *call(void* threadId) {
 
 	rc = pthread_mutex_lock(&telcount);
 
-	if (taken >= 250 ) { //full
+	if (taken == 250 ) { //full
 		rc = pthread_mutex_lock(&monitorLock);
 
 		printf("pelatis %d Η κράτηση ματαιώθηκε γιατί το θέατρο είναι γεμάτο.\n", *tid);
