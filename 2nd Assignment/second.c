@@ -15,7 +15,7 @@ int telAvailable = Ntel;
 int cashAvailable = Ncash;
 double sum, m, mtwo; 
 int rc, income, i, j, taken;
-int rate[4];
+int *rate;
 
 
 struct timespec start, startover, mid, midtwo, finish;
@@ -26,6 +26,7 @@ void *call(void* threadId) {
 	int probZone, min, max, seat, cashsleep, n;
 	char zone;
 	int* seatsNum;
+	rate = (int*)malloc(4*sizeof(int));
 
 
 	rc = pthread_mutex_lock(&telcount);
@@ -408,6 +409,7 @@ int main(int argc, char** argv) {
 	
 
 	free(threads);
+	free(rate);
 
  return 1;
 
