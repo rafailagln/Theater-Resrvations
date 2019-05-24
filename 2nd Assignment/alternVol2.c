@@ -8,7 +8,7 @@
 pthread_mutex_t telcount, account, transNo, timecount, seatPlan, monitorLock, randLock, cashCount, takenCount;
 pthread_cond_t telCond = PTHREAD_COND_INITIALIZER;
 pthread_cond_t cashCond = PTHREAD_COND_INITIALIZER;
-int *seatsTable[3]; //plano thesewn
+int *seatsTable[3]; //plano thesewn ana zwni
 unsigned int seed; 	//sporos
 int trans = 1;	//arithmisi synallagwn
 int telAvailable = Ntel;
