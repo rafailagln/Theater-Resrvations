@@ -89,15 +89,14 @@ void *call(void* threadId) {
 
 	rc = pthread_mutex_lock(&telcount);
 
-	if (taken == 250 ) { //full
+	if (counter == 250 ) { //full
 		rc = pthread_mutex_lock(&monitorLock);
 
-		printf("pelatis %d Η κράτηση ματαιώθηκε γιατί το θέατρο είναι γεμάτο.\n", *tid);
+		printf("Πελάτης %d Η κράτηση ματαιώθηκε γιατί το θέατρο είναι γεμάτο.\n", *tid);
 
 		rc = pthread_mutex_unlock(&monitorLock);
 		rate[0]++;
 
-		//ayxanei ton metriti twn tilefwnitwn
 		telAvailable++;		
 
 		pthread_cond_signal(&telCond);
@@ -262,7 +261,7 @@ void *call(void* threadId) {
 					printf(",");
 				}
 			}
-			printf("> στη Σειρα <%d> και Ζώνη <%c> και το κόστος συναλλαγής είναι %d ευρώ.\n", row+1, zone, cost);
+			printf("> στη Ζώνη <%c> και το κόστος συναλλαγής είναι %d ευρώ.\n",  zone, cost);
 
 			rc = pthread_mutex_unlock(&monitorLock);
 			rate[3]++;
